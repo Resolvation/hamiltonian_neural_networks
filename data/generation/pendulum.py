@@ -16,7 +16,7 @@ for i in tqdm(range(12000)):
     sol = solve_ivp(f, (0, 14.5), (q, p), t_eval=np.arange(0, 15, 0.5))
 
     for j, (q, p) in enumerate(zip(sol.y[0], sol.y[1])):
-        img = np.full((64, 64, 3), 80, 'uint8')
-        cv2.circle(img, (31 + int(16 * sin(q)), 31 + int(16 * cos(q))), 8, (0, 255, 255), -1)
-        img = cv2.blur(img, (4, 4))
+        img = np.full((32, 32, 3), 80, 'uint8')
+        cv2.circle(img, (15 + int(8 * sin(q)), 15 + int(8 * cos(q))), 3, (0, 255, 255), -1)
+        img = cv2.blur(img, (3, 3))
         cv2.imwrite(f'../pendulum/{i}_{j}.jpg', img)
