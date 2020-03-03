@@ -42,7 +42,10 @@ for epoch in range(n_epochs):
         optimizer.step()
 
     if epoch % 10 == 9:
-        ToPILImage()(torch.cat((image[0].cpu().detach(), rec[0].cpu().detach()), dim=2)).save(f'{epoch + 1}.jpg')
+        image = image[0].cpu().detach()
+        rec = rec[0].cpu().detach()
+        diff = 10 * abs(image - rec)
+        ToPILImage()(torch.cat((image, rec, diff), dim=2)).save(f'{epoch + 1}.jpg')
         print(f'Epoch: {epoch + 1}\tLoss: {epoch_loss / len(Data()):.04f}')
 
 
