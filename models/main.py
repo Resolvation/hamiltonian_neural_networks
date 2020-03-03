@@ -1,8 +1,10 @@
+from tqdm import tqdm
+
 import torch
 from torch import optim
 from torch.utils.data import DataLoader, Dataset
-from torchvision.transforms import ToPILImage
 
+from logger import Logger
 from vae import VAE
 from utils import change_lr, linear_lr
 
@@ -29,10 +31,13 @@ optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=1e-5)
 
 n_epochs = 100
 
-for epoch in range(1, n_epochs + 1):
+logger = Logger('../logs')
+
+for epoch in tqdm(range(1, n_epochs + 1)):
     epoch_loss = 0.
 
-    change_lr(optimizer, lr * linear_lr(epoch, n_epochs))
+    epoch_lr = lr * linear_lr(epoch, n_epochs)
+    change_lr(optimizer, epoch_lr)
 
     for image in trainloader:
         image = image.cuda()
@@ -46,9 +51,5 @@ for epoch in range(1, n_epochs + 1):
 
         optimizer.step()
 
-    if epoch % 10 == 0:
-        image = image[0].cpu().detach()
-        rec = rec[0].cpu().detach()
-        diff = 10 * abs(image - rec)
-        ToPILImage()(torch.cat((image, rec, diff), dim=2)).save(f'{epoch}.jpg')
-        print(f'Epoch: {epoch}\tLoss: {epoch_loss / len(Data()):.04f}')
+    logger.log(epoch, epoch_lr, epoch_loss / len(trainloader.dataset))
+    logger.save_image(epoch, image[0], rec[0])
