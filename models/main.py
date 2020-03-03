@@ -1,35 +1,23 @@
 from tqdm import tqdm
 
-import torch
 from torch import optim
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 
+from data.mass_spring import MassSpring
 from logger import Logger
 from vae import VAE
 from utils import change_lr, linear_lr
 
 
-class Data(Dataset):
-    def __init__(self):
-        super().__init__()
-        self.data = torch.load('../data/mass_spring.tar')
-
-    def __getitem__(self, index):
-        return self.data[index // 30, index % 30]
-
-    def __len__(self):
-        return self.data.shape[0] * 30
-
-
+n_epochs = 100
 lr = 1e-4
 
-trainloader = DataLoader(Data(), batch_size=30, shuffle=True, num_workers=4)
+trainloader = DataLoader(MassSpring('vae'),
+                         batch_size=30, shuffle=True, num_workers=4)
 
 model = VAE().cuda()
-model.training = True
 optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=1e-5)
 
-n_epochs = 100
 
 logger = Logger('../logs')
 
