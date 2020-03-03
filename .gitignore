@@ -1,0 +1,9 @@
+.idea
+.ipynb_checkpoints
+__pycache__
+data/__pycache__
+data/*.tar
+logs
+models/__pycache__
+old
+venv
