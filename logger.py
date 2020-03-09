@@ -16,11 +16,14 @@ class Logger:
         self.main = os.path.join(self.path, 'main.log')
         os.mknod(self.main)
 
-    def save_image(self, epoch, orig, rec):
-        orig = orig.cpu().detach()
-        rec = rec.cpu().detach()
-        diff = 10 * abs(orig - rec)
-        log_image = ToPILImage()(torch.cat((orig, rec, diff), dim=2))
+    def save_image(self, epoch, doublets):
+        images = []
+        for orig, rec in doublets:
+            orig = orig.cpu().detach()
+            rec = rec.cpu().detach()
+            diff = 10 * abs(orig - rec)
+            images.append(torch.cat((orig, rec, diff), dim=2))
+        log_image = ToPILImage()(torch.cat(images, dim=1))
         log_image.save(os.path.join(self.path, f'{epoch}.jpg'))
 
     def save_pth(self, epoch, model):

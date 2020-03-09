@@ -3,7 +3,7 @@ from tqdm import tqdm
 from torch import optim
 from torch.utils.data import DataLoader
 
-from data.pendulum import Pendulum
+from data.mass_spring import MassSpring
 from logger import Logger
 from vae import VAE
 from utils import change_lr, linear_lr
@@ -12,7 +12,7 @@ from utils import change_lr, linear_lr
 n_epochs = 100
 lr = 1e-4
 
-trainloader = DataLoader(Pendulum('vae'),
+trainloader = DataLoader(MassSpring('vae'),
                          batch_size=30, shuffle=True, num_workers=4)
 
 model = VAE().cuda()
@@ -40,6 +40,7 @@ for epoch in tqdm(range(1, n_epochs + 1)):
         optimizer.step()
 
     logger.log(epoch, epoch_lr, epoch_loss / len(trainloader.dataset))
-    logger.save_image(epoch, image[0], rec[0])
+    logger.save_image(epoch, [(image[0], rec[0])])
 
-logger.save_pth(epoch, model)
+    if epoch % 20 == 0:
+        logger.save_pth(epoch, model)

@@ -26,7 +26,7 @@ class MassSpring(Dataset):
         if self.mode == 'vae':
             return self.data[index // 30, index % 30]
         elif self.mode == 'hnn':
-            return self.data[index]
+            return self.data[index].view(-1, 32, 32)
 
     def __len__(self):
         if self.mode == 'vae':
