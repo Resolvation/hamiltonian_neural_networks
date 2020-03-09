@@ -11,7 +11,7 @@ from torch.utils.data import Dataset
 
 
 class MassSpring(Dataset):
-    def __init__(self, mode='vae', root='../data', n_samples=1200):
+    def __init__(self, mode='vae', root='data', n_samples=1200):
         if mode not in {'vae', 'hnn'}:
             raise ValueError('Wrong mode.')
         self.mode = mode

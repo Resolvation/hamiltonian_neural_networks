@@ -8,6 +8,7 @@ from torchvision.transforms import ToPILImage
 class Logger:
     def __init__(self, root='logs'):
         self.root = root
+
         if not os.path.exists(root):
             os.makedirs(root)
         self.name = str(datetime.now())
@@ -30,6 +31,7 @@ class Logger:
         torch.save(model.state_dict(), os.path.join(self.path, f'{epoch}.pth.tar'))
 
     def log(self, epoch, lr, loss):
+        line = f'Epoch: {epoch}\tlr: {lr:.03e}\tLoss: {loss:.04f}\n'
         with open(self.main, 'a') as f:
-            f.write(f'Epoch: {epoch}\tlr: {lr:.03e}\tLoss: {loss:.04f}\n')
+            f.write(line)
 
