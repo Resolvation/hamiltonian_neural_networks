@@ -13,13 +13,15 @@ class UnFlatten(nn.Module):
 
 
 class HNN(nn.Module):
-    def __init__(self, dt=0.125):
+    def __init__(self, input_length=30, output_length=45, dt=0.125):
         super().__init__()
+        self.input_length = input_length
+        self.output_length = output_length
         self.dt = dt
 
         self.encoder = nn.Sequential(
-            # b 90 32 32
-            nn.Conv2d(90, 32, kernel_size=3, padding=1),
+            # b input_length 32 32
+            nn.Conv2d(input_length, 32, kernel_size=3, padding=1),
             nn.MaxPool2d(2, stride=2),
             nn.ReLU(),
             # b 32 16 16
@@ -39,6 +41,8 @@ class HNN(nn.Module):
         self.fc2 = nn.Linear(512, 512)
 
         self.hamiltonian = nn.Sequential(
+            nn.Linear(512, 512),
+            nn.Softplus(),
             nn.Linear(512, 1)
         )
 
@@ -69,21 +73,24 @@ class HNN(nn.Module):
         return z, mu, logvar
 
     def ham_grad(self, z):
-        batch_size = z.shape[0]
-        return self.hamiltonian[0].weight.repeat(batch_size, 1)
+        return (self.hamiltonian[0].weight.t()[None] * torch.sigmoid(self.hamiltonian[0](z))[:, None] @ self.hamiltonian[2].weight.t()[None])[:, :, 0]
 
     def integrate(self, z):
-        z[:, 256:] -= 0.5 * self.ham_grad(z)[:, :256] * self.dt
-        z[:, :256] += self.ham_grad(z)[:, 256:] * self.dt
-        z[:, 256:] -= 0.5 * self.ham_grad(z)[:, :256] * self.dt
-        return z
+        grad = self.ham_grad(z)[:, :256]
+        z1 = z - 0.5 * torch.cat([torch.zeros_like(grad), grad], axis=1) * self.dt
+        grad = self.ham_grad(z1)[:, 256:]
+        z2 = z1 + torch.cat([grad, torch.zeros_like(grad)], axis=1) * self.dt
+        grad = self.ham_grad(z2)[:, :256]
+        z3 = z2 - 0.5 * torch.cat([torch.zeros_like(grad), grad], axis=1) * self.dt
+        return z3
 
     def forward(self, x):
+        batch_size = x.shape[0]
         h = self.encoder(x)
         z, mu, logvar = self.bottleneck(h)
-        result = torch.empty_like(x)
+        result = torch.empty(batch_size, self.output_length, 32, 32).cuda()
         result[:, :3] = self.decoder(z[:, :256])
-        for i in range(3, 90, 3):
+        for i in range(3, self.output_length, 3):
             z = self.integrate(z)
             result[:, i: i + 3] = self.decoder(z[:, :256])
         return result, mu, logvar

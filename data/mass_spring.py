@@ -44,6 +44,8 @@ class MassSpring(Dataset):
             r = np.random.uniform(0.1, 1)
             q = np.random.uniform(-sqrt(r), sqrt(r))
             p = np.random.choice([-1, 1]) * sqrt(r - q * q)
+            q += np.random.normal(scale=sqrt(0.1))
+            p += np.random.normal(scale=sqrt(0.1))
             sol = solve_ivp(f, (0, 14.5), (q, p), t_eval=np.arange(0, 15, 0.5))
 
             for j, q in enumerate(sol.y[0]):

@@ -6,12 +6,15 @@ from torchvision.transforms import ToPILImage
 
 
 class Logger:
-    def __init__(self, root='logs'):
+    def __init__(self, root='logs', name=None):
         self.root = root
 
         if not os.path.exists(root):
             os.makedirs(root)
-        self.name = str(datetime.now())
+        if name is None:
+            self.name = str(datetime.now())
+        else:
+            self.name = name
         self.path = os.path.join(root, self.name)
         os.makedirs(self.path)
         self.main = os.path.join(self.path, 'main.log')
@@ -23,8 +26,8 @@ class Logger:
             orig = orig.cpu().detach()
             rec = rec.cpu().detach()
             diff = 10 * abs(orig - rec)
-            images.append(torch.cat((orig, rec, diff), dim=2))
-        log_image = ToPILImage()(torch.cat(images, dim=1))
+            images.append(torch.cat((orig, rec, diff), dim=1))
+        log_image = ToPILImage()(torch.cat(images, dim=2))
         log_image.save(os.path.join(self.path, f'{epoch}.jpg'))
 
     def save_pth(self, epoch, model):
