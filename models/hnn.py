@@ -43,8 +43,13 @@ class HNN(nn.Module):
         self.hamiltonian = nn.Sequential(
             nn.Linear(512, 512),
             nn.Softplus(),
+            nn.Linear(512, 512),
+            nn.Softplus(),
             nn.Linear(512, 1)
         )
+
+        self.h1 = lambda z: self.hamiltonian[0](z)
+        self.h2 = lambda z: self.hamiltonian[2](self.hamiltonian[1](self.h1(z)))
 
         self.decoder = nn.Sequential(
             # b 256
@@ -73,7 +78,9 @@ class HNN(nn.Module):
         return z, mu, logvar
 
     def ham_grad(self, z):
-        return (self.hamiltonian[0].weight.t()[None] * torch.sigmoid(self.hamiltonian[0](z))[:, None] @ self.hamiltonian[2].weight.t()[None])[:, :, 0]
+        return (self.hamiltonian[0].weight.t()[None] * torch.sigmoid(self.h1(z))[:, None]
+                @ (self.hamiltonian[2].weight.t()[None] * torch.sigmoid(self.h2(z))[:, None])
+                @ self.hamiltonian[4].weight.t()[None])[:, :, 0]
 
     def integrate(self, z):
         grad = self.ham_grad(z)[:, :256]

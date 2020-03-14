@@ -17,7 +17,7 @@ class MassSpring(Dataset):
         self.root = root
         self.n_samples = n_samples
         self.verbose = verbose
-        self.path = os.path.join(self.root, 'mass_spring.tar')
+        self.path = os.path.join(self.root, f'mass_spring_{n_samples}.tar')
         if not os.path.exists(self.path):
             self.generate()
         self.data = torch.load(self.path)

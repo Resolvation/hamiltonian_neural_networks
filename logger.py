@@ -40,4 +40,3 @@ class Logger:
             print(line[: -1])
         with open(self.main, 'a') as f:
             f.write(line)
-

@@ -10,8 +10,8 @@ from utils import change_lr, linear_lr
 dataset = 'mass_spring'
 model = 'hnn'
 lr = 1.5e-4
-n_epochs = 600
-input_length = 3 * 25
+n_epochs = 400
+input_length = 3 * 30
 output_length = 3 * 30
 
 
@@ -32,11 +32,12 @@ else:
     raise ValueError('Wrong model.')
 
 trainloader = DataLoader(dataset(model_name, verbose=True),
-                         batch_size=100, shuffle=True, num_workers=4)
+                         batch_size=90, shuffle=True, num_workers=4)
+testloader = DataLoader(dataset(model_name, n_samples=100, verbose=True),
+                         batch_size=10, shuffle=False, num_workers=4)
 
 model = model(input_length, output_length).cuda()
 optimizer = optim.Adam(model.parameters(), lr=lr)
-
 
 logger = Logger(verbose=True)
 
@@ -73,3 +74,22 @@ for epoch in range(1, n_epochs + 1):
 
     if epoch % 20 == 0:
         logger.save_pth(epoch, model)
+
+if model_name == 'hnn':
+    model.eval()
+
+    total_loss = 0
+
+    for i, image in enumerate(testloader):
+        image = image.cuda()
+
+        rec, _, _ = model(image[:, : input_length])
+
+        total_loss += (rec[:, : input_length] - image[:, : input_length]).pow(2).sum().item()
+
+        images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, output_length, 3)]
+        logger.save_image(f'test_{i}', images)
+
+    total_loss /= input_length
+
+    logger.log('test', -1, total_loss / len(testloader.dataset))
