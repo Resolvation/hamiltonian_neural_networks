@@ -4,19 +4,19 @@ import os
 import cv2
 import numpy as np
 from scipy.integrate import solve_ivp
-from tqdm import tqdm
 
 import torch
 from torch.utils.data import Dataset
 
 
 class MassSpring(Dataset):
-    def __init__(self, mode='vae', root='data', n_samples=1200):
+    def __init__(self, mode='vae', root='data', n_samples=1200, verbose=False):
         if mode not in {'vae', 'hnn'}:
             raise ValueError('Wrong mode.')
         self.mode = mode
         self.root = root
         self.n_samples = n_samples
+        self.verbose = verbose
         self.path = os.path.join(self.root, 'mass_spring.tar')
         if not os.path.exists(self.path):
             self.generate()
@@ -35,12 +35,15 @@ class MassSpring(Dataset):
             return self.n_samples
 
     def generate(self):
+        if self.verbose:
+            print('Generating data.')
+
         def f(t, y):
             return 2 * y[1], -2 * y[0]
 
         results = torch.empty(self.n_samples, 30, 3, 32, 32)
 
-        for i in tqdm(range(self.n_samples)):
+        for i in range(self.n_samples):
             r = np.random.uniform(0.1, 1)
             q = np.random.uniform(-sqrt(r), sqrt(r))
             p = np.random.choice([-1, 1]) * sqrt(r - q * q)
@@ -57,4 +60,7 @@ class MassSpring(Dataset):
         results /= 255
 
         torch.save(results, self.path)
+
+        if self.verbose:
+            print('Data generated.')
 

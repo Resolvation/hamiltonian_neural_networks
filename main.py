@@ -1,5 +1,3 @@
-from tqdm import tqdm
-
 from torch import optim
 from torch.utils.data import DataLoader
 
@@ -33,16 +31,16 @@ elif model == 'hnn':
 else:
     raise ValueError('Wrong model.')
 
-trainloader = DataLoader(dataset(model_name),
+trainloader = DataLoader(dataset(model_name, verbose=True),
                          batch_size=100, shuffle=True, num_workers=4)
 
 model = model(input_length, output_length).cuda()
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
 
-logger = Logger()
+logger = Logger(verbose=True)
 
-for epoch in tqdm(range(1, n_epochs + 1)):
+for epoch in range(1, n_epochs + 1):
     epoch_loss = 0.
 
     epoch_lr = lr   # * linear_lr(epoch, n_epochs)
