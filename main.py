@@ -47,7 +47,7 @@ logger = Logger(verbose=True)
 for epoch in range(1, n_epochs + 1):
     epoch_loss = 0.
 
-    epoch_lr = linear_lr(epoch, n_epochs)
+    epoch_lr = lr * linear_lr(epoch, n_epochs)
     change_lr(optimizer, epoch_lr)
 
     for image in trainloader:
