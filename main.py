@@ -9,10 +9,13 @@ from utils import change_lr, linear_lr
 
 dataset = 'mass_spring'
 model = 'hnn'
-lr = 1.5e-4
+lr = 1e-4
 n_epochs = 400
-input_length = 3 * 30
-output_length = 3 * 30
+
+
+def hnn_loss(image, rec, mu, logvar):
+    return (rec - image).pow(2).sum() / 30 \
+            + (mu.pow(2) + logvar.exp() - logvar).sum()
 
 
 if dataset == 'mass_spring':
@@ -32,11 +35,11 @@ else:
     raise ValueError('Wrong model.')
 
 trainloader = DataLoader(dataset(model_name, n_samples=2000, verbose=True),
-                         batch_size=100, shuffle=True, num_workers=4)
+                         batch_size=30, shuffle=True, num_workers=4)
 testloader = DataLoader(dataset(model_name, n_samples=100, verbose=True),
                          batch_size=10, shuffle=False, num_workers=4)
 
-model = model(input_length, output_length).cuda()
+model = model().cuda()
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
 logger = Logger(verbose=True)
@@ -44,19 +47,18 @@ logger = Logger(verbose=True)
 for epoch in range(1, n_epochs + 1):
     epoch_loss = 0.
 
-    epoch_lr = lr   # * linear_lr(epoch, n_epochs)
-    # change_lr(optimizer, epoch_lr)
+    epoch_lr = linear_lr(epoch, n_epochs)
+    change_lr(optimizer, epoch_lr)
 
     for image in trainloader:
         image = image.cuda()
         optimizer.zero_grad()
 
-        rec, mu, logvar = model(image[:, : input_length])
+        rec, mu, logvar = model(image)
         if model_name == 'vae':
             loss = ((rec - image).pow(2)).sum()
         elif model_name == 'hnn':
-            loss = ((rec[:, : input_length] - image[:, : input_length]).pow(2).sum()
-                    + (mu.pow(2) + logvar.exp() - logvar - 1).sum()) / input_length
+            loss = hnn_loss(image, rec, mu, logvar)
         loss.backward()
 
         epoch_loss += loss.item()
@@ -67,7 +69,7 @@ for epoch in range(1, n_epochs + 1):
     if model_name == 'vae':
         logger.save_image(epoch, [(image[0], rec[0])])
     elif model_name == 'hnn':
-        images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, output_length, 3)]
+        images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, 90, 3)]
         logger.save_image(epoch, images)
 
     if epoch % 20 == 0:
@@ -81,14 +83,11 @@ if model_name == 'hnn':
     for i, image in enumerate(testloader):
         image = image.cuda()
 
-        rec, mu, logvar = model(image[:, : input_length])
+        rec, mu, logvar = model(image)
 
-        total_loss += ((rec[:, : input_length] - image[:, : input_length]).pow(2).sum()
-                       + (mu.pow(2) + logvar.exp() - logvar - 1).sum()) / input_length
+        total_loss += hnn_loss(image, rec, mu, logvar)
 
-        images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, output_length, 3)]
+        images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, 90, 3)]
         logger.save_image(f'test_{i}', images)
-
-    total_loss /= input_length
 
     logger.log('test', -1, total_loss / len(testloader.dataset))

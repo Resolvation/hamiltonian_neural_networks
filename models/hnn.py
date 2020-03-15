@@ -13,7 +13,7 @@ class UnFlatten(nn.Module):
 
 
 class HNN(nn.Module):
-    def __init__(self, input_length=30, output_length=45, dt=0.125):
+    def __init__(self, input_length=90, output_length=90, dt=0.125):
         super().__init__()
         self.input_length = input_length
         self.output_length = output_length
