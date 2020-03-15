@@ -32,7 +32,7 @@ else:
     raise ValueError('Wrong model.')
 
 trainloader = DataLoader(dataset(model_name, n_samples=2000, verbose=True),
-                         batch_size=90, shuffle=True, num_workers=4)
+                         batch_size=100, shuffle=True, num_workers=4)
 testloader = DataLoader(dataset(model_name, n_samples=100, verbose=True),
                          batch_size=10, shuffle=False, num_workers=4)
 
@@ -55,16 +55,13 @@ for epoch in range(1, n_epochs + 1):
         if model_name == 'vae':
             loss = ((rec - image).pow(2)).sum()
         elif model_name == 'hnn':
-            loss = (rec[:, : input_length] - image[:, : input_length]).pow(2).sum() \
-                   + (mu.pow(2) + logvar.exp() - logvar - 1).sum()
+            loss = ((rec[:, : input_length] - image[:, : input_length]).pow(2).sum()
+                    + (mu.pow(2) + logvar.exp() - logvar - 1).sum()) / input_length
         loss.backward()
 
         epoch_loss += loss.item()
 
         optimizer.step()
-
-    if model_name == 'hnn':
-        epoch_loss /= input_length
 
     logger.log(epoch, epoch_lr, epoch_loss / len(trainloader.dataset))
     if model_name == 'vae':
@@ -84,9 +81,10 @@ if model_name == 'hnn':
     for i, image in enumerate(testloader):
         image = image.cuda()
 
-        rec, _, _ = model(image[:, : input_length])
+        rec, mu, logvar = model(image[:, : input_length])
 
-        total_loss += (rec[:, : input_length] - image[:, : input_length]).pow(2).sum().item()
+        total_loss += ((rec[:, : input_length] - image[:, : input_length]).pow(2).sum()
+                       + (mu.pow(2) + logvar.exp() - logvar - 1).sum()) / input_length
 
         images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, output_length, 3)]
         logger.save_image(f'test_{i}', images)
