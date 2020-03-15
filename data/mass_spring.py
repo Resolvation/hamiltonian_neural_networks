@@ -17,6 +17,7 @@ class MassSpring(Dataset):
         self.root = root
         self.n_samples = n_samples
         self.verbose = verbose
+
         self.path = os.path.join(self.root, f'mass_spring_{n_samples}.tar')
         if not os.path.exists(self.path):
             self.generate()
@@ -47,8 +48,10 @@ class MassSpring(Dataset):
             r = np.random.uniform(0.1, 1)
             q = np.random.uniform(-sqrt(r), sqrt(r))
             p = np.random.choice([-1, 1]) * sqrt(r - q * q)
+
             q += np.random.normal(scale=sqrt(0.1))
             p += np.random.normal(scale=sqrt(0.1))
+
             sol = solve_ivp(f, (0, 14.5), (q, p), t_eval=np.arange(0, 15, 0.5))
 
             for j, q in enumerate(sol.y[0]):
@@ -63,4 +66,3 @@ class MassSpring(Dataset):
 
         if self.verbose:
             print('Data generated.')
-
