@@ -67,7 +67,7 @@ class HNN(nn.Module):
         )
         
     def reparameterize(self, mu, logvar):
-        std = logvar.mul(0.5).exp_()
+        std = logvar.mul(0.5).exp()
         eps = torch.randn(*mu.size()).cuda()
         z = mu + std * eps
         return z
@@ -78,7 +78,7 @@ class HNN(nn.Module):
         return z, mu, logvar
 
     def ham_grad(self, z):
-        return (self.hamiltonian[0].weight.t()[None] * torch.sigmoid(self.h1(z))[:, None]
+        return ((self.hamiltonian[0].weight.t()[None] * torch.sigmoid(self.h1(z))[:, None])
                 @ (self.hamiltonian[2].weight.t()[None] * torch.sigmoid(self.h2(z))[:, None])
                 @ self.hamiltonian[4].weight.t()[None])[:, :, 0]
 

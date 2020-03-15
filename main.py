@@ -31,7 +31,7 @@ elif model == 'hnn':
 else:
     raise ValueError('Wrong model.')
 
-trainloader = DataLoader(dataset(model_name, verbose=True),
+trainloader = DataLoader(dataset(model_name, n_samples=2000, verbose=True),
                          batch_size=90, shuffle=True, num_workers=4)
 testloader = DataLoader(dataset(model_name, n_samples=100, verbose=True),
                          batch_size=10, shuffle=False, num_workers=4)
@@ -51,11 +51,12 @@ for epoch in range(1, n_epochs + 1):
         image = image.cuda()
         optimizer.zero_grad()
 
-        rec, _, _ = model(image[:, : input_length])
+        rec, mu, logvar = model(image[:, : input_length])
         if model_name == 'vae':
             loss = ((rec - image).pow(2)).sum()
         elif model_name == 'hnn':
-            loss = (rec[:, : input_length] - image[:, : input_length]).pow(2).sum()
+            loss = (rec[:, : input_length] - image[:, : input_length]).pow(2).sum() \
+                   + (mu.pow(2) + logvar.exp() - logvar - 1).sum()
         loss.backward()
 
         epoch_loss += loss.item()
