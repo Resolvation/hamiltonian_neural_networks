@@ -9,13 +9,17 @@ from utils import change_lr, linear_lr
 
 dataset = 'mass_spring'
 model = 'hnn'
-lr = 1e-4
+lr = 3e-5
 n_epochs = 400
 
 
-def hnn_loss(image, rec, mu, logvar):
+def beta(epoch):
+    return 0 if epoch < n_epochs // 4 else 0.01
+
+
+def hnn_loss(image, rec, mu, logvar, epoch):
     return (rec - image).pow(2).sum() / 30 \
-            + (mu.pow(2) + logvar.exp() - logvar).sum()
+            + beta(epoch) * (mu.pow(2) + logvar.exp() - logvar).sum()
 
 
 if dataset == 'mass_spring':
@@ -36,7 +40,7 @@ else:
 
 trainloader = DataLoader(dataset(model_name, n_samples=2000, verbose=True),
                          batch_size=30, shuffle=True, num_workers=4)
-testloader = DataLoader(dataset(model_name, n_samples=100, verbose=True),
+testloader = DataLoader(dataset(model_name, n_samples=200, verbose=True),
                          batch_size=10, shuffle=False, num_workers=4)
 
 model = model().cuda()
@@ -58,7 +62,7 @@ for epoch in range(1, n_epochs + 1):
         if model_name == 'vae':
             loss = ((rec - image).pow(2)).sum()
         elif model_name == 'hnn':
-            loss = hnn_loss(image, rec, mu, logvar)
+            loss = hnn_loss(image, rec, mu, logvar, epoch)
         loss.backward()
 
         epoch_loss += loss.item()
@@ -85,7 +89,7 @@ if model_name == 'hnn':
 
         rec, mu, logvar = model(image)
 
-        total_loss += hnn_loss(image, rec, mu, logvar)
+        total_loss += hnn_loss(image, rec, mu, logvar, n_epochs)
 
         images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, 90, 3)]
         logger.save_image(f'test_{i}', images)
