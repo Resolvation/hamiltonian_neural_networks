@@ -1,3 +1,4 @@
+import torch
 from torch import optim
 from torch.utils.data import DataLoader
 
@@ -9,7 +10,7 @@ from utils import change_lr, linear_lr
 
 dataset = 'mass_spring'
 model = 'hnn'
-lr = 3e-5
+lr = 1e-4
 n_epochs = 400
 
 
@@ -39,7 +40,7 @@ else:
     raise ValueError('Wrong model.')
 
 trainloader = DataLoader(dataset(model_name, n_samples=2000, verbose=True),
-                         batch_size=30, shuffle=True, num_workers=4)
+                         batch_size=10, shuffle=True, num_workers=4)
 testloader = DataLoader(dataset(model_name, n_samples=200, verbose=True),
                          batch_size=10, shuffle=False, num_workers=4)
 
@@ -49,6 +50,7 @@ optimizer = optim.Adam(model.parameters(), lr=lr)
 logger = Logger(verbose=True)
 
 for epoch in range(1, n_epochs + 1):
+    torch.cuda.empty_cache()
     epoch_loss = 0.
 
     epoch_lr = lr * linear_lr(epoch, n_epochs)
@@ -70,6 +72,7 @@ for epoch in range(1, n_epochs + 1):
         optimizer.step()
 
     logger.log(epoch, epoch_lr, epoch_loss / len(trainloader.dataset))
+
     if model_name == 'vae':
         logger.save_image(epoch, [(image[0], rec[0])])
     elif model_name == 'hnn':

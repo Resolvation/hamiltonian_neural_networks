@@ -56,7 +56,7 @@ class Pendulum(Dataset):
 
             for j, (q, p) in enumerate(zip(sol.y[0], sol.y[1])):
                 img = np.full((32, 32, 3), 80, 'uint8')
-                cv2.circle(img, (15 + int(8 * sin(q)), 15 + int(8 * cos(q))), 3, (255, 255, 0), -1)
+                cv2.circle(img, (15 + int(8 * cos(q)), 15 + int(8 * sin(q))), 3, (255, 255, 0), -1)
                 img = cv2.blur(img, (3, 3))
                 results[i, j] = torch.tensor(img, dtype=float).transpose(0, 2)
 
