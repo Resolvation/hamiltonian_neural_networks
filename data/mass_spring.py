@@ -49,10 +49,10 @@ class MassSpring(Dataset):
             q = np.random.uniform(-sqrt(r), sqrt(r))
             p = np.random.choice([-1, 1]) * sqrt(r - q * q)
 
-            q += np.random.normal(scale=sqrt(0.1))
-            p += np.random.normal(scale=sqrt(0.1))
-
             sol = solve_ivp(f, (0, 14.5), (q, p), t_eval=np.arange(0, 15, 0.5))
+
+            sol.y[0] += np.random.normal(scale=sqrt(0.1), size=sol.y[0].shape)
+            sol.y[1] += np.random.normal(scale=sqrt(0.1), size=sol.y[1].shape)
 
             for j, q in enumerate(sol.y[0]):
                 img = np.full((32, 32, 3), 80, 'uint8')

@@ -49,10 +49,10 @@ class Pendulum(Dataset):
             q = np.random.uniform(-acos(1 - r / 3), acos(1 - r / 3))
             p = np.random.choice([-1, 1]) * sqrt(r - 3 * (1 - cos(q)))
 
-            q += np.random.normal(scale=sqrt(0.1))
-            p += np.random.normal(scale=sqrt(0.1))
-
             sol = solve_ivp(f, (0, 14.5), (q, p), t_eval=np.arange(0, 15, 0.5))
+
+            sol.y[0] += np.random.normal(scale=sqrt(0.1), size=sol.y[0].shape)
+            sol.y[1] += np.random.normal(scale=sqrt(0.1), size=sol.y[1].shape)
 
             for j, (q, p) in enumerate(zip(sol.y[0], sol.y[1])):
                 img = np.full((32, 32, 3), 80, 'uint8')
