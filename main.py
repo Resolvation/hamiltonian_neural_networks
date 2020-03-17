@@ -9,6 +9,7 @@ from utils import change_lr, linear_lr
 
 
 dataset = 'mass_spring'
+dataset = 'pendulum'
 model = 'hnn'
 lr = 1e-4
 n_epochs = 400
@@ -50,7 +51,6 @@ optimizer = optim.Adam(model.parameters(), lr=lr)
 logger = Logger(verbose=True)
 
 for epoch in range(1, n_epochs + 1):
-    torch.cuda.empty_cache()
     epoch_loss = 0.
 
     epoch_lr = lr * linear_lr(epoch, n_epochs)
@@ -92,7 +92,7 @@ if model_name == 'hnn':
 
         rec, mu, logvar = model(image)
 
-        total_loss += hnn_loss(image, rec, mu, logvar, n_epochs)
+        total_loss += hnn_loss(image, rec, mu, logvar, n_epochs).item()
 
         images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, 90, 3)]
         logger.save_image(f'test_{i}', images)
