@@ -8,20 +8,16 @@ from models import HNN, VAE
 from utils import change_lr, linear_lr
 
 
-dataset = 'mass_spring'
+# dataset = 'mass_spring'
 dataset = 'pendulum'
 model = 'hnn'
 lr = 1e-4
-n_epochs = 400
-
-
-def beta(epoch):
-    return 0 if epoch < n_epochs // 4 else 0.01
+n_epochs = 600
 
 
 def hnn_loss(image, rec, mu, logvar, epoch):
     return (rec - image).pow(2).sum() / 30 \
-            + beta(epoch) * (mu.pow(2) + logvar.exp() - logvar).sum()
+            + 0.001 * (mu.pow(2) + logvar.exp() - logvar).sum()
 
 
 if dataset == 'mass_spring':
@@ -41,9 +37,9 @@ else:
     raise ValueError('Wrong model.')
 
 trainloader = DataLoader(dataset(model_name, n_samples=2000, verbose=True),
-                         batch_size=10, shuffle=True, num_workers=4)
+                         batch_size=20, shuffle=True, num_workers=4)
 testloader = DataLoader(dataset(model_name, n_samples=200, verbose=True),
-                         batch_size=10, shuffle=False, num_workers=4)
+                         batch_size=20, shuffle=False, num_workers=4)
 
 model = model().cuda()
 optimizer = optim.Adam(model.parameters(), lr=lr)
