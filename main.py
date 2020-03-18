@@ -2,20 +2,21 @@ import torch
 from torch import optim
 from torch.utils.data import DataLoader
 
-from data import MassSpring, Pendulum
+from data import MassSpring, Pendulum, TwoBody
 from logger import Logger
 from models import HNN, VAE
 from utils import change_lr, linear_lr
 
 
 # dataset = 'mass_spring'
-dataset = 'pendulum'
+# dataset = 'pendulum'
+dataset = 'two_body'
 model = 'hnn'
 lr = 1e-4
 n_epochs = 600
 
 
-def hnn_loss(image, rec, mu, logvar, epoch):
+def hnn_loss(image, rec, mu, logvar):
     return (rec - image).pow(2).sum() / 30 \
             + 0.001 * (mu.pow(2) + logvar.exp() - logvar).sum()
 
@@ -24,6 +25,8 @@ if dataset == 'mass_spring':
     dataset = MassSpring
 elif dataset == 'pendulum':
     dataset = Pendulum
+elif dataset == 'two_body':
+    dataset = TwoBody
 else:
     raise ValueError('Wrong dataset name.')
 
@@ -60,7 +63,7 @@ for epoch in range(1, n_epochs + 1):
         if model_name == 'vae':
             loss = ((rec - image).pow(2)).sum()
         elif model_name == 'hnn':
-            loss = hnn_loss(image, rec, mu, logvar, epoch)
+            loss = hnn_loss(image, rec, mu, logvar)
         loss.backward()
 
         epoch_loss += loss.item()
@@ -79,18 +82,17 @@ for epoch in range(1, n_epochs + 1):
         logger.save_pth(epoch, model)
 
 if model_name == 'hnn':
-    model.eval()
+    with torch.no_grad():
+        total_loss = 0
 
-    total_loss = 0
+        for i, image in enumerate(testloader):
+            image = image.cuda()
 
-    for i, image in enumerate(testloader):
-        image = image.cuda()
+            rec, mu, logvar = model(image)
 
-        rec, mu, logvar = model(image)
+            total_loss += hnn_loss(image, rec, mu, logvar)
 
-        total_loss += hnn_loss(image, rec, mu, logvar, n_epochs).item()
+            images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, 90, 3)]
+            logger.save_image(f'test_{i}', images)
 
-        images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, 90, 3)]
-        logger.save_image(f'test_{i}', images)
-
-    logger.log('test', -1, total_loss / len(testloader.dataset))
+        logger.log('test', -1, total_loss / len(testloader.dataset))
