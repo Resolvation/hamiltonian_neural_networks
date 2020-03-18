@@ -1,3 +1,5 @@
+import argparse
+
 import torch
 from torch import optim
 from torch.utils.data import DataLoader
@@ -8,51 +10,53 @@ from models import HNN, VAE
 from utils import change_lr, linear_lr
 
 
-# dataset = 'mass_spring'
-# dataset = 'pendulum'
-dataset = 'two_body'
-model = 'hnn'
-lr = 1e-4
-n_epochs = 600
+parser = argparse.ArgumentParser()
+parser.add_argument('-d', '--dataset', type=str)
+parser.add_argument('-e', '--epochs', default=600, type=int)
+parser.add_argument('-m', '--model', default='hnn', type=str)
+parser.add_argument('-lr', '--learning_rate', default=1e-4, type=float)
+parser.add_argument('-b', '--beta', default=1e-3, type=float)
+parser.add_argument('-bs', '--batch_size', default=20, type=int)
+args = parser.parse_args()
 
 
 def hnn_loss(image, rec, mu, logvar):
     return (rec - image).pow(2).sum() / 30 \
-            + 0.001 * (mu.pow(2) + logvar.exp() - logvar).sum()
+           + args.beta * (mu.pow(2) + logvar.exp() - logvar).sum()
 
 
-if dataset == 'mass_spring':
+if args.dataset == 'mass_spring':
     dataset = MassSpring
-elif dataset == 'pendulum':
+elif args.dataset == 'pendulum':
     dataset = Pendulum
-elif dataset == 'two_body':
+elif args.dataset == 'two_body':
     dataset = TwoBody
 else:
     raise ValueError('Wrong dataset name.')
 
-if model == 'vae':
+if args.model == 'vae':
     model_name = 'vae'
     model = VAE
-elif model == 'hnn':
+elif args.model == 'hnn':
     model_name = 'hnn'
     model = HNN
 else:
     raise ValueError('Wrong model.')
 
 trainloader = DataLoader(dataset(model_name, n_samples=2000, verbose=True),
-                         batch_size=20, shuffle=True, num_workers=4)
+                         batch_size=args.batch_size, shuffle=True, num_workers=4)
 testloader = DataLoader(dataset(model_name, n_samples=200, verbose=True),
-                         batch_size=20, shuffle=False, num_workers=4)
+                        batch_size=args.batch_size, shuffle=False, num_workers=4)
 
 model = model().cuda()
-optimizer = optim.Adam(model.parameters(), lr=lr)
+optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
 logger = Logger(verbose=True)
 
-for epoch in range(1, n_epochs + 1):
+for epoch in range(1, args.epochs + 1):
     epoch_loss = 0.
 
-    epoch_lr = lr * linear_lr(epoch, n_epochs)
+    epoch_lr = args.learning_rate * linear_lr(epoch, args.epochs)
     change_lr(optimizer, epoch_lr)
 
     for image in trainloader:
