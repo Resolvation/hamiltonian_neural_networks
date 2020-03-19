@@ -11,8 +11,8 @@ from .hamiltonain_dataset import HamiltonianDataset
 
 
 class TwoBody(HamiltonianDataset):
-    def __init__(self, mode, n_samples, root='data'):
-        super().__init__(mode, n_samples, root)
+    def __init__(self, n_samples, root='data'):
+        super().__init__(n_samples, root)
 
         self.data_path = os.path.join(self.root, f'two_body_{n_samples}.tar')
         if not os.path.exists(self.data_path):
@@ -23,7 +23,7 @@ class TwoBody(HamiltonianDataset):
         def f(t, y):
             return np.hstack((y[4:], np.hstack((y[2: 4] - y[: 2], y[: 2] - y[2: 4]))))
 
-        results = torch.empty(self.n_samples, 30, 3, 32, 32)
+        results = torch.empty(self.n_samples, 90, 32, 32)
 
         for i in range(self.n_samples):
             r = np.random.uniform(0.5, 1.5)
@@ -42,7 +42,7 @@ class TwoBody(HamiltonianDataset):
                 cv2.circle(img, (15 + int(q[0] * 16), 15 + int(q[1] * 16)), 2, (255, 255, 0), -1)
                 cv2.circle(img, (15 + int(q[2] * 16), 15 + int(q[3] * 16)), 2, (255, 0, 0), -1)
                 img = cv2.blur(img, (3, 3))
-                results[i, j] = torch.tensor(img, dtype=float).transpose(0, 2)
+                results[i, 3 * j: 3 * j + 3] = torch.tensor(img, dtype=float).transpose(0, 2)
 
         results /= 255
 

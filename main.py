@@ -6,23 +6,17 @@ from torch.utils.data import DataLoader
 
 from data import MassSpring, Pendulum, TwoBody
 from logger import Logger
-from models import HNN, VAE
+from models import HNN
 from utils import change_lr, linear_lr
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--dataset', type=str)
 parser.add_argument('-e', '--epochs', default=600, type=int)
-parser.add_argument('-m', '--model', default='hnn', type=str)
 parser.add_argument('-lr', '--learning_rate', default=1e-4, type=float)
 parser.add_argument('-b', '--beta', default=1e-3, type=float)
 parser.add_argument('-bs', '--batch_size', default=20, type=int)
 args = parser.parse_args()
-
-
-def hnn_loss(image, rec, mu, logvar):
-    return (rec - image).pow(2).sum() / 30 \
-           + args.beta * (mu.pow(2) + logvar.exp() - logvar).sum()
 
 
 if args.dataset == 'mass_spring':
@@ -34,21 +28,18 @@ elif args.dataset == 'two_body':
 else:
     raise ValueError('Wrong dataset name.')
 
-if args.model == 'vae':
-    model_name = 'vae'
-    model = VAE
-elif args.model == 'hnn':
-    model_name = 'hnn'
-    model = HNN
-else:
-    raise ValueError('Wrong model.')
 
-trainloader = DataLoader(dataset(model_name, n_samples=2000, verbose=True),
-                         batch_size=args.batch_size, shuffle=True, num_workers=4)
-testloader = DataLoader(dataset(model_name, n_samples=200, verbose=True),
-                        batch_size=args.batch_size, shuffle=False, num_workers=4)
+def hnn_loss(image, rec, mu, logvar):
+    return (rec - image).pow(2).sum() / 30 \
+           + args.beta * (mu.pow(2) + logvar.exp() - logvar).sum()
 
-model = model().cuda()
+
+trainloader = DataLoader(dataset(n_samples=20), batch_size=args.batch_size,
+                         shuffle=True, num_workers=4)
+testloader = DataLoader(dataset(n_samples=20), batch_size=args.batch_size,
+                        shuffle=False, num_workers=4)
+
+model = HNN().cuda()
 optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
 logger = Logger(verbose=True)
@@ -60,43 +51,36 @@ for epoch in range(1, args.epochs + 1):
     change_lr(optimizer, epoch_lr)
 
     for image in trainloader:
-        image = image.cuda()
         optimizer.zero_grad()
+        image = image.cuda()
 
         rec, mu, logvar = model(image)
-        if model_name == 'vae':
-            loss = ((rec - image).pow(2)).sum()
-        elif model_name == 'hnn':
-            loss = hnn_loss(image, rec, mu, logvar)
+        loss = hnn_loss(image, rec, mu, logvar)
+
         loss.backward()
-
         epoch_loss += loss.item()
-
         optimizer.step()
 
     logger.log(epoch, epoch_lr, epoch_loss / len(trainloader.dataset))
 
-    if model_name == 'vae':
-        logger.save_image(epoch, [(image[0], rec[0])])
-    elif model_name == 'hnn':
-        images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, 90, 3)]
+    images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, 90, 3)]
+
+    if epoch % 5 == 0:
         logger.save_image(epoch, images)
 
     if epoch % 20 == 0:
         logger.save_pth(epoch, model)
 
-if model_name == 'hnn':
-    with torch.no_grad():
-        total_loss = 0
+with torch.no_grad():
+    total_loss = 0
 
-        for i, image in enumerate(testloader):
-            image = image.cuda()
+    for i, image in enumerate(testloader):
+        image = image.cuda()
 
-            rec, mu, logvar = model(image)
+        rec, mu, logvar = model(image)
+        total_loss += hnn_loss(image, rec, mu, logvar)
 
-            total_loss += hnn_loss(image, rec, mu, logvar)
+        images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, 90, 3)]
+        logger.save_image(f'test_{i}', images)
 
-            images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, 90, 3)]
-            logger.save_image(f'test_{i}', images)
-
-        logger.log('test', -1, total_loss / len(testloader.dataset))
+    logger.log('test', -1, total_loss / len(testloader.dataset))
