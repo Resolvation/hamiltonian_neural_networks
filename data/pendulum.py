@@ -6,39 +6,20 @@ import numpy as np
 from scipy.integrate import solve_ivp
 
 import torch
-from torch.utils.data import Dataset
+
+from .hamiltonain_dataset import HamiltonianDataset
 
 
-class Pendulum(Dataset):
-    def __init__(self, mode='vae', root='data', n_samples=1200, verbose=False):
-        if mode not in {'vae', 'hnn'}:
-            raise ValueError('Wrong mode.')
-        self.mode = mode
-        self.root = root
-        self.n_samples = n_samples
-        self.verbose = verbose
+class Pendulum(HamiltonianDataset):
+    def __init__(self, mode, n_samples, root='data'):
+        super().__init__(mode, n_samples, root)
 
-        self.path = os.path.join(self.root, f'pendulum_{n_samples}.tar')
-        if not os.path.exists(self.path):
+        self.data_path = os.path.join(self.root, f'pendulum_{n_samples}.tar')
+        if not os.path.exists(self.data_path):
             self.generate()
-        self.data = torch.load(self.path)
-
-    def __getitem__(self, index):
-        if self.mode == 'vae':
-            return self.data[index // 30, index % 30]
-        elif self.mode == 'hnn':
-            return self.data[index].view(-1, 32, 32)
-
-    def __len__(self):
-        if self.mode == 'vae':
-            return 30 * self.n_samples
-        elif self.mode == 'hnn':
-            return self.n_samples
+        self.data = torch.load(self.data_path)
 
     def generate(self):
-        if self.verbose:
-            print('Generating data.')
-
         def f(t, y):
             return 2 * y[1], -3 * sin(y[0])
 
@@ -49,12 +30,11 @@ class Pendulum(Dataset):
             q = np.random.uniform(-acos(1 - r / 3), acos(1 - r / 3))
             p = np.random.choice([-1, 1]) * sqrt(r - 3 * (1 - cos(q)))
 
-            sol = solve_ivp(f, (0, 14.5), (q, p), t_eval=np.arange(0, 15, 0.5))
+            sol = solve_ivp(f, (0, 14.5), (q, p), t_eval=np.arange(0, 15, 0.5)).y
 
-            sol.y[0] += np.random.normal(scale=0.1, size=sol.y[0].shape)
-            sol.y[1] += np.random.normal(scale=0.1, size=sol.y[1].shape)
+            sol += np.random.normal(scale=0.1, size=sol.shape)
 
-            for j, (q, p) in enumerate(zip(sol.y[0], sol.y[1])):
+            for j, (q, p) in enumerate(zip(sol[0], sol[1])):
                 img = np.full((32, 32, 3), 80, 'uint8')
                 cv2.circle(img, (15 + int(8 * cos(q)), 15 + int(8 * sin(q))), 3, (255, 255, 0), -1)
                 img = cv2.blur(img, (3, 3))
@@ -62,7 +42,4 @@ class Pendulum(Dataset):
 
         results /= 255
 
-        torch.save(results, self.path)
-
-        if self.verbose:
-            print('Data generated.')
+        torch.save(results, self.data_path)
