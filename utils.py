@@ -3,7 +3,7 @@ def linear_lr(epoch, n_epochs):
         return 1
     else:
         k = (n_epochs - epoch) / (n_epochs / 2)
-        return k + 0.01 * (1 - k)
+        return k + 0.1 * (1 - k)
 
 
 def change_lr(optimizer, lr):

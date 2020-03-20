@@ -21,15 +21,15 @@ class HNN(nn.Module):
 
         self.encoder = nn.Sequential(
             # b input_length 32 32
-            nn.Conv2d(input_length, 32, kernel_size=3, padding=1),
+            nn.Conv2d(input_length, 64, kernel_size=3, padding=1),
             nn.MaxPool2d(2, stride=2),
             nn.ReLU(),
-            # b 32 16 16
-            nn.Conv2d(32, 32, kernel_size=3, padding=1),
+            # b 64 16 16
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
             nn.MaxPool2d(2, stride=2),
             nn.ReLU(),
-            # b 32 8 8
-            nn.Conv2d(32, 32, kernel_size=3, padding=1),
+            # b 64 8 8
+            nn.Conv2d(64, 32, kernel_size=3, padding=1),
             nn.MaxPool2d(2, stride=2),
             nn.ReLU(),
             # b 32 4 4
@@ -41,15 +41,18 @@ class HNN(nn.Module):
         self.fc2 = nn.Linear(512, 512)
 
         self.hamiltonian = nn.Sequential(
-            nn.Linear(512, 512),
+            nn.Linear(512, 256),
             nn.Softplus(),
-            nn.Linear(512, 512),
+            nn.Linear(256, 128),
             nn.Softplus(),
-            nn.Linear(512, 1)
+            nn.Linear(128, 128),
+            nn.Softplus(),
+            nn.Linear(128, 1)
         )
 
         self.h1 = lambda z: self.hamiltonian[0](z)
         self.h2 = lambda z: self.hamiltonian[2](self.hamiltonian[1](self.h1(z)))
+        self.h3 = lambda z: self.hamiltonian[4](self.hamiltonian[3](self.h2(z)))
 
         self.decoder = nn.Sequential(
             # b 256
@@ -80,7 +83,8 @@ class HNN(nn.Module):
     def ham_grad(self, z):
         return ((self.hamiltonian[0].weight.t()[None] * torch.sigmoid(self.h1(z))[:, None])
                 @ (self.hamiltonian[2].weight.t()[None] * torch.sigmoid(self.h2(z))[:, None])
-                @ self.hamiltonian[4].weight.t()[None])[:, :, 0]
+                @ (self.hamiltonian[4].weight.t()[None] * torch.sigmoid(self.h3(z))[:, None])
+                @ self.hamiltonian[6].weight.t()[None])[:, :, 0]
 
     def integrate(self, z):
         grad = self.ham_grad(z)[:, :256]
