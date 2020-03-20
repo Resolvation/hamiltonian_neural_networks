@@ -12,8 +12,8 @@ from utils import change_lr, linear_lr
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--dataset', type=str)
-parser.add_argument('-e', '--epochs', default=600, type=int)
-parser.add_argument('-lr', '--learning_rate', default=1e-4, type=float)
+parser.add_argument('-e', '--epochs', default=400, type=int)
+parser.add_argument('-lr', '--learning_rate', default=3e-4, type=float)
 parser.add_argument('-b', '--beta', default=1e-3, type=float)
 parser.add_argument('-bs', '--batch_size', default=20, type=int)
 args = parser.parse_args()
@@ -34,9 +34,9 @@ def hnn_loss(image, rec, mu, logvar):
            + args.beta * (mu.pow(2) + logvar.exp() - logvar).sum()
 
 
-trainloader = DataLoader(dataset(n_samples=20), batch_size=args.batch_size,
+trainloader = DataLoader(dataset(n_samples=4000), batch_size=args.batch_size,
                          shuffle=True, num_workers=4)
-testloader = DataLoader(dataset(n_samples=20), batch_size=args.batch_size,
+testloader = DataLoader(dataset(n_samples=400), batch_size=args.batch_size,
                         shuffle=False, num_workers=4)
 
 model = HNN().cuda()

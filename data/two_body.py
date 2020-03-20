@@ -46,4 +46,4 @@ class TwoBody(HamiltonianDataset):
 
         results /= 255
 
-        torch.save(results, self.path)
+        torch.save(results, self.data_path)
