@@ -19,11 +19,11 @@ class UnFlatten(nn.Module):
 
 
 class Merge(nn.Module):
-	def __init__(self):
-		super().__init__()
+    def __init__(self):
+        super().__init__()
 
-	def forward(self, qp):
-		return torch.cat(qp, dim=1)
+    def forward(self, qp):
+        return torch.cat(qp, dim=1)
 
 
 class HNN(nn.Module):
@@ -59,7 +59,7 @@ class HNN(nn.Module):
         self.fc2 = nn.Linear(512, 512)
 
         self.hamiltonian = nn.Sequential(
-			Merge(),
+            Merge(),
             nn.Linear(512, 512),
             nn.Softplus(),
             nn.Linear(512, 256),
@@ -82,18 +82,18 @@ class HNN(nn.Module):
             # b 16 4 4
             nn.ConvTranspose2d(16, 16, kernel_size=5, stride=2, padding=2, output_padding=1),
             nn.ReLU(),
-			nn.Conv2d(16, 16, kernel_size=3, padding=1),
+            nn.Conv2d(16, 16, kernel_size=3, padding=1),
             nn.ReLU(),
             # b 16 8 8
             nn.ConvTranspose2d(16, 16, kernel_size=5, stride=2, padding=2, output_padding=1),
             nn.ReLU(),
-			nn.Conv2d(16, 16, kernel_size=3, padding=1),
+            nn.Conv2d(16, 16, kernel_size=3, padding=1),
             nn.ReLU(),
             # b 16 16 16
             nn.ConvTranspose2d(16, 16, kernel_size=5, stride=2, padding=2, output_padding=1),
-			nn.ReLU(),
-			# b 16 16 16
-			nn.Conv2d(16, 3, kernel_size=3, padding=1),
+            nn.ReLU(),
+            # b 16 16 16
+            nn.Conv2d(16, 3, kernel_size=3, padding=1),
             nn.Sigmoid(),
             # b 3 32 32
         )

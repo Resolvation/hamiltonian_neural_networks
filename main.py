@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import torch
 from torch import optim
@@ -7,7 +8,7 @@ from torch.utils.data import DataLoader
 from data import MassSpring, Pendulum, TwoBody
 from logger import Logger
 from models import HNN
-from utils import change_lr, linear_lr
+from utils import change_lr
 
 
 parser = argparse.ArgumentParser()
@@ -44,10 +45,23 @@ optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
 logger = Logger(verbose=True)
 
+best_loss = None
+best_epoch = None
+
 for epoch in range(1, args.epochs + 1):
     epoch_loss = 0.
 
-    epoch_lr = args.learning_rate * linear_lr(epoch, args.epochs)
+    if epoch <= 100:
+        epoch_lr = args.learning_rate
+    elif epoch <= 150:
+        if epoch == 101:
+            model.load_state_dict(torch.load(os.path.join(logger.path, str(best_epoch)+'.pth.tar')))
+        epoch_lr = 0.1 * args.learning_rate
+    else:
+        if epoch == 151:
+            model.load_state_dict(torch.load(os.path.join(logger.path, str(best_epoch)+'.pth.tar')))
+        epoch_lr = 0.01 * args.learning_rate
+
     change_lr(optimizer, epoch_lr)
 
     for image in trainloader:
@@ -68,7 +82,9 @@ for epoch in range(1, args.epochs + 1):
     if epoch % 5 == 0:
         logger.save_image(epoch, images)
 
-    if epoch % 20 == 0:
+    if best_loss is None or epoch_loss < best_loss:
+        best_epoch = epoch
+        best_loss = epoch_loss
         logger.save_pth(epoch, model)
 
 with torch.no_grad():
