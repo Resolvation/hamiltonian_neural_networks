@@ -12,7 +12,7 @@ from utils import change_lr, linear_lr
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--dataset', type=str)
-parser.add_argument('-e', '--epochs', default=400, type=int)
+parser.add_argument('-e', '--epochs', default=200, type=int)
 parser.add_argument('-lr', '--learning_rate', default=3e-4, type=float)
 parser.add_argument('-b', '--beta', default=1e-3, type=float)
 parser.add_argument('-bs', '--batch_size', default=20, type=int)
