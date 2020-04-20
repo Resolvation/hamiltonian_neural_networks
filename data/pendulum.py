@@ -30,7 +30,7 @@ class Pendulum(HamiltonianDataset):
             q = np.random.uniform(-acos(1 - r / 3), acos(1 - r / 3))
             p = np.random.choice([-1, 1]) * sqrt(r - 3 * (1 - cos(q)))
 
-            sol = solve_ivp(f, (0, 14.5), (q, p), t_eval=np.arange(0, 15, 0.5)).y
+            sol = solve_ivp(f, (0, 7.25), (q, p), t_eval=np.arange(0, 7.5, 0.25)).y
 
             sol += np.random.normal(scale=0.1, size=sol.shape)
 

@@ -30,7 +30,7 @@ class MassSpring(HamiltonianDataset):
             q = np.random.uniform(-sqrt(r), sqrt(r))
             p = np.random.choice([-1, 1]) * sqrt(r - q * q)
 
-            sol = solve_ivp(f, (0, 14.5), (q, p), t_eval=np.arange(0, 15, 0.5)).y
+            sol = solve_ivp(f, (0, 7.25), (q, p), t_eval=np.arange(0, 7.5, 0.25)).y
 
             sol += np.random.normal(scale=0.1, size=sol.shape)
 

@@ -33,7 +33,7 @@ class TwoBody(HamiltonianDataset):
             q = np.array([sin(alpha), cos(alpha), sin(alpha + pi), cos(alpha + pi)]) * q_diff / 2
             p = np.array([cos(alpha), sin(alpha), -cos(alpha), -sin(alpha)]) * ln
 
-            sol = solve_ivp(f, (0, 14.5), np.hstack((q, p)), t_eval=np.arange(0, 15, 0.5)).y
+            sol = solve_ivp(f, (0, 7.25), np.hstack((q, p)), t_eval=np.arange(0, 7.5, 0.25)).y
 
             sol += np.random.normal(scale=0.05, size=sol.shape)
 

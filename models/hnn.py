@@ -55,8 +55,16 @@ class HNN(nn.Module):
             # b 512
         )
         
-        self.fc1 = nn.Linear(512, 512)
-        self.fc2 = nn.Linear(512, 512)
+        self.fc1 = nn.Sequential(
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 512),
+        )
+        self.fc2 = nn.Sequential(
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 512),
+        )
 
         self.hamiltonian = nn.Sequential(
             Merge(),
