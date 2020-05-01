@@ -34,8 +34,8 @@ class Logger:
     def save_pth(self, epoch, model):
         torch.save(model.state_dict(), os.path.join(self.path, f'{epoch}.pth.tar'))
 
-    def log(self, epoch, lr, loss):
-        line = f'Epoch: {epoch}\tlr: {lr:.03e}\tLoss: {loss:.04f}\n'
+    def log(self, epoch, lr, mse, loss):
+        line = f'Epoch: {epoch}\tlr: {lr:.03e}\tMSE: {mse:.04f}\tLoss: {loss:.04f}\n'
         if self.verbose:
             print(line[: -1])
         with open(self.main, 'a') as f:

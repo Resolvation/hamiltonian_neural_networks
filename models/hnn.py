@@ -127,8 +127,7 @@ class HNN(nn.Module):
     def integrate(self, q, p):
         grad = self.ham_grad((q, p))[:, 256:]
         p1 = p - 0.5 * grad * self.dt
-        grad = self.ham_grad((q, p1))[:, :256]
-        q1 = q + grad * self.dt
+        q1 = q + p1 * self.dt
         grad = self.ham_grad((q1, p1))[:, 256:]
         p2 = p1 - 0.5 * grad * self.dt
         return q1, p2

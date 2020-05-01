@@ -31,7 +31,9 @@ else:
 
 
 def hnn_loss(image, rec, mu, logvar):
-    return (rec - image).pow(2).sum() / 30 \
+    with torch.no_grad():
+        mse = (rec - image).pow(2).sum() / 30
+    return mse, (rec - image).pow(2).sum() / 30 \
            + args.beta * (mu.pow(2) + logvar.exp() - logvar).sum()
 
 
@@ -50,16 +52,19 @@ best_epoch = None
 
 for epoch in range(1, args.epochs + 1):
     epoch_loss = 0.
+    epoch_mse = 0.
 
     if epoch <= 100:
         epoch_lr = args.learning_rate
     elif epoch <= 150:
         if epoch == 101:
-            model.load_state_dict(torch.load(os.path.join(logger.path, str(best_epoch)+'.pth.tar')))
+            model.load_state_dict(torch.load(os.path.join(logger.path,
+                                                          str(best_epoch)+'.pth.tar')))
         epoch_lr = 0.1 * args.learning_rate
     else:
         if epoch == 151:
-            model.load_state_dict(torch.load(os.path.join(logger.path, str(best_epoch)+'.pth.tar')))
+            model.load_state_dict(torch.load(os.path.join(logger.path,
+                                                          str(best_epoch)+'.pth.tar')))
         epoch_lr = 0.01 * args.learning_rate
 
     change_lr(optimizer, epoch_lr)
@@ -69,13 +74,15 @@ for epoch in range(1, args.epochs + 1):
         image = image.cuda()
 
         rec, mu, logvar = model(image)
-        loss = hnn_loss(image, rec, mu, logvar)
+        mse, loss = hnn_loss(image, rec, mu, logvar)
 
         loss.backward()
         epoch_loss += loss.item()
+        epoch_mse += mse.item()
         optimizer.step()
 
-    logger.log(epoch, epoch_lr, epoch_loss / len(trainloader.dataset))
+    logger.log(epoch, epoch_lr, mse / len(trainloader.dataset),
+               epoch_loss / len(trainloader.dataset))
 
     images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, 90, 3)]
 
@@ -88,15 +95,20 @@ for epoch in range(1, args.epochs + 1):
         logger.save_pth(epoch, model)
 
 with torch.no_grad():
-    total_loss = 0
+    total_loss = 0.
+    total_mse = 0.
 
     for i, image in enumerate(testloader):
         image = image.cuda()
 
         rec, mu, logvar = model(image)
-        total_loss += hnn_loss(image, rec, mu, logvar)
+        mse, loss = hnn_loss(image, rec, mu, logvar)
+
+        total_loss += loss.item()
+        total_mse += mse.item()
 
         images = [(image[0, i: i + 3], rec[0, i: i + 3]) for i in range(0, 90, 3)]
         logger.save_image(f'test_{i}', images)
 
-    logger.log('test', -1, total_loss / len(testloader.dataset))
+    logger.log('test', -1, total_mse / len(testloader.dataset),
+               total_loss / len(testloader.dataset))
